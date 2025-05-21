@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+  <meta charset="UTF-8">
+  <title>Valós idejű HTML dokumentum</title>
+  <style>
+    body {
+      font-family: sans-serif;
+    }
+    #editor {
+      border: 1px solid #ccc;
+      padding: 10px;
+      min-height: 300px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Szerkeszthető dokumentum</h1>
+  <div id="editor" contenteditable="true"></div>
+
+  <script>
+    const editor = document.getElementById('editor');
+    const socket = new WebSocket(`wss://${location.host}`);
+
+    socket.onmessage = (event) => {
+      const data = JSON.parse(event.data);
+      if (data.type === 'init' || data.type === 'update') {
+        editor.innerHTML = data.content;
+      }
+    };
+
+    let timeout = null;
+    editor.addEventListener('input', () => {
+      clearTimeout(timeout);
+      timeout = setTimeout(() => {
+        socket.send(JSON.stringify({
+          type: 'update',
+          content: editor.innerHTML
+        }));
+      }, 500);
+    });
+  </script>
+</body>
+</html>
